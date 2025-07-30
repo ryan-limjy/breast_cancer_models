@@ -1,6 +1,6 @@
 # PRS and Gail Model Evaluation by Ethnicity and Age
 
-This repository contains code for evaluating the predictive performance of **Polygenic Risk Scores (PRS)** and the **Gail Model** in a large case-control cohort of women. The primary focus is to assess model discrimination and calibration across different **ethnic** and **age** groups.
+This repository contains code for evaluating the predictive performance of **Polygenic Risk Scores (PRS)** and the **Gail Model** in a large case-control cohort of women. The primary focus is to assess model discrimination and calibration across different ethnic and age groups.
 
 ## Summary
 
@@ -8,7 +8,7 @@ We examine how well PRS and Gail risk scores predict breast cancer status among 
 
 - Calculate **AUC** (Area Under the Curve) for different subgroups using logistic regression.
 - Assess **calibration** using the `predtools` package, comparing observed versus predicted risk in other groups relative to a reference group (European women aged ≥50).
-- Provide additional insight into how model performance changes with age through interaction terms.
+
 
 ## File Overview
 
