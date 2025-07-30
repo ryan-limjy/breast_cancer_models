@@ -20,9 +20,13 @@ This script contains the function used to calculate AUC and its 95% CI reported:
   ```r
   glm(status ~ risk_score, family = binomial)
   ```
+  
 - Use `predict()` on the fitted model to obtain the predicted probability of event.
+  
 - Compute the AUC and 95% CI using the pROC package (`pROC::roc()`).
+  
 - The argument THRESHOLD creates an alternative binary risk score variable, where individuals grouped 1 if their risk score exceed THRESHOLD and 0 otherwise. This binary risk score variable's AUC and corresponding CIs are also reported by the function.
+  
 - While not in the script, the odds ratio presented in Figure 2 are derived from the same logistic model.
 
 ### 2. `calibration.R`
