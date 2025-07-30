@@ -25,9 +25,7 @@ This script contains the function used to calculate AUC and its 95% CI reported:
 - The argument THRESHOLD creates an alternative binary risk score variable, where individuals grouped 1 if their risk score exceed THRESHOLD and 0 otherwise. This binary risk score variable's AUC and corresponding CIs are also reported by the function.
 - While not in the script, the odds ratio presented in Figure 2 are derived from the same logistic model.
 
-
-
-###2. `calibration.R`
+### 2. `calibration.R`
 
 This script contains the function used to generate calibration plots and p-values using the R package `predtools`.
 
@@ -43,7 +41,7 @@ Outputs include:
 - Calibration plots using `calibration_plot()`, stratified by deciles
 
 
-###Additional Notes
+### Additional Notes
 - Gail risk scores were calculated using the `BRCA::absolute.risk` function from the R package `BRCA`. Example data for testing is provided within the package (`BRCA::exampledata`).
 
 - The interaction models used in Figure 2 uses the formula
