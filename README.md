@@ -1,4 +1,4 @@
-# PRS and Gail Model Evaluation by Ethnicity and Age
+# PRS and Gail model evaluation by ethnicity and age
 
 This repository contains code for evaluating the predictive performance of **Polygenic Risk Scores (PRS)** and the **Gail Model** in a large case-control cohort of women. The primary focus is to assess model discrimination and calibration across different ethnic and age groups.
 
