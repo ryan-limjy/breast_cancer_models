@@ -6,28 +6,34 @@ This repository contains code for evaluating the predictive performance of **Pol
 
 We examine how well PRS and Gail risk scores predict breast cancer status among women of varying backgrounds. We:
 
-- Calculate **AUC** (Area Under the Curve) for different subgroups using logistic regression.
-- Assess **calibration** using the `predtools` package, comparing observed versus predicted risk in other groups relative to a reference group (European women aged ≥50).
+- Calculated the Gail risk score for the sample using the R package `BRCA`
+- Computed polygenic risk scores (PRS) from imputed genotype using PLINK2
+- Calculated **AUC** (Area Under the Curve) for different subgroups using logistic regression.
+- Plotted AUC curves based on different threshold for both risk scores
+- Assessed **calibration** using the `predtools` package, comparing observed versus predicted risk in other groups relative to a reference group (European women aged ≥50).
 
 
 ## File Overview
 
-### 1. `auc_function.R`
+### 1. Gail risk score
 
-This script contains the function used to calculate AUC and its 95% CI reported:
+The gail risk score was computed using the function `BRCA::absolute.risk`. An example dataset is given within the same package with the function `exampledata`. For Figure 3 where we look at risk factors included, factors that were not considered were set to 99 (unknown).
 
-- Fit a logistic regression model:
-  ```r
-  glm(status ~ risk_score, family = binomial)
-  ```
-  
-- Use `predict()` on the fitted model to obtain the predicted probability of event.
-  
-- Compute the AUC and 95% CI using the pROC package (`pROC::roc()`).
-  
-- The argument THRESHOLD creates an alternative binary risk score variable, where individuals grouped 1 if their risk score exceed THRESHOLD and 0 otherwise. This binary risk score variable's AUC and corresponding CIs are also reported by the function.
-  
-- While not in the script, the odds ratio presented in Figure 2 are derived from the same logistic model.
+### 2. Polygenic risk score
+
+The polygenic risk score (PRS) was derived using the `.txt` pipeline contained within the PRS folder. Within, it has:
+- A `.score` file contatining variant weights derived from GWAS summary statistics
+- A `.txt` bash script that runs PRS computation using PLINK2's `--score` across ancestries
+- Scoring for overall, ER-positive and ER-negative risk models
+- Removal of duplicated samples across arrays
+- Aggregation of ancestry-specific results into unified PRS profiles for downstream analysis
+
+### 3. `auc_function.R`
+
+This script contains functions used in calculating the 95% confidence intervals of the odds ratio and AUC reported. It includes:
+
+- `glm.out()`: Fits the logistic regression model `glm(status ~ risk.score)` and returns odds ratios (OR), 95% confidence intervals, and p-values.
+- `get.auc()`: Optionally computes the Area Under the Curve (AUC) and its 95% CI using the `pROC` package, for model discrimination.
 
 ### 2. `calibration.R`
 
@@ -46,7 +52,6 @@ Outputs include:
 
 
 ### Additional Notes
-- Gail risk scores were calculated using the `BRCA::absolute.risk` function from the R package `BRCA`. Example data for testing is provided within the package (`BRCA::exampledata`).
 
 - The interaction models used in Figure 2 uses the formula
 ```{r}
