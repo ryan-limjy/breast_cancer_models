@@ -1,0 +1,95 @@
+## START INTERACTIVE JOB
+srun -t 8:00:00 --ntasks-per-node 4 --mem=15G -p interactive --pty /bin/bash
+
+## LOAD GENO TO SERVER
+scp -r "<local_path>/concept_743_Overlap/" <your_username>@<remote_host>:scratch
+
+## CREATING FAM FILES
+cd "<path_to_dataset>/concept_743_Overlap/geno/"
+
+R
+setwd("geno")
+list <- dir()[grep("sample_order.txt", dir())]
+
+for (i in 1:length(list)) {
+  file <- list[i]
+  data <- read.csv(file, header = FALSE, sep = "\t", stringsAsFactors = FALSE)
+  zero <- matrix(nrow = nrow(data), ncol = 1, 0)
+  sex <- matrix(nrow = nrow(data), ncol = 1, 2)
+  pheno <- matrix(nrow = nrow(data), ncol = 1, 1)
+  data <- cbind(data, data, zero, zero, sex, pheno)
+  write.table(data, paste0(file, ".fam"), row.names = FALSE, col.names = FALSE, quote = FALSE, sep = " ")
+}
+
+## CREATING WEIGHTS FILE
+R
+prs <- read.csv("pheno/313_SNPS_NM.csv", header = TRUE)
+data1 <- read.csv("geno/icogs_variants_info.txt", header = TRUE, sep = " ", stringsAsFactors = FALSE)
+data2 <- read.csv("geno/onco_variants_info.txt", header = TRUE, sep = " ", stringsAsFactors = FALSE)
+
+set1 <- merge(data1, prs, by.x = c("chr", "position", "a0", "a1"), by.y = c("CHR", "Position", "a0", "a1"))
+set2 <- merge(data2, prs, by.x = c("chr", "position", "a0", "a1"), by.y = c("CHR", "Position", "a0", "a1"))
+set <- rbind(set1, set2)
+
+set$logOR_overall <- log(set$OR_overall)
+set$logOR_er_pos  <- log(set$OR_er_pos)
+set$logOR_er_neg  <- log(set$OR_er_neg)
+set <- set[!duplicated(set$X1000g_identifier), ]
+
+write.table(set, "geno/prs-313snps.score", row.names = FALSE, quote = FALSE, sep = "\t")
+
+## COPY FILES TO SERVER
+scp -r *.fam <your_username>@<remote_host>:scratch
+scp -r *.score <your_username>@<remote_host>:scratch
+
+## REMOVE DUPLICATES ACROSS ARRAYS
+cut -f1 overlap_list.txt > temp
+paste temp temp > overlap_list.fam
+rm temp
+
+partition file1.fam file2.fam -w
+mv 'a&b.txt' dup_sample
+
+rm a-b.txt b-a.txt
+
+## PLINK2 SCORING SCRIPT (excluding duplicates)
+# score.sh
+plink2 --import-dosage $1 'format=1' 'noheader' 'skip1=1' \
+       --fam $2 --score prs-313snps.score 6 4 $3 header list-variants \
+       cols=+scoresums --out $4 --remove $5
+
+# score2.sh 
+plink2 --import-dosage $1 'format=1' 'noheader' 'skip1=1' \
+       --fam $2 --score prs-313snps.score 6 4 $3 header list-variants \
+       cols=+scoresums --out $4
+
+## RUN SCORES (example)
+./score.sh euro_icogs.txt euro_icogs.fam 16 prs_overall_euro_icogs dup_list
+./score2.sh euro_onco.txt euro_onco.fam 16 prs_overall_euro_onco
+
+## CONCATENATE SCORES
+cat prs_overall*sscore | grep -v "#" > prs_overall.profile
+cat prs_erpos*sscore   | grep -v "#" > prs_erpos.profile
+cat prs_erneg*sscore   | grep -v "#" > prs_erneg.profile
+
+## COMBINE INTO FINAL RDS OBJECT
+R
+library(RDS)
+
+prs1 <- read.table("sscore/prs_overall.profile", header = FALSE, stringsAsFactors = FALSE)
+prs2 <- read.table("sscore/prs_erpos.profile", header = FALSE, stringsAsFactors = FALSE)
+prs3 <- read.table("sscore/prs_erneg.profile", header = FALSE, stringsAsFactors = FALSE)
+
+colnames(prs1) <- c("BCAC_ID", "IID", "PHENO1", "NMISS_OVERALL", "DOSAGE_SUM_OVERALL", "SCORE_AVG_OVERALL", "SCORE_SUM_OVERALL")
+colnames(prs2) <- c("BCAC_ID", "IID", "PHENO1", "NMISS_ERPOS", "DOSAGE_SUM_ERPOS", "SCORE_AVG_ERPOS", "SCORE_SUM_ERPOS")
+colnames(prs3) <- c("BCAC_ID", "IID", "PHENO1", "NMISS_ERNEG", "DOSAGE_SUM_ERNEG", "SCORE_AVG_ERNEG", "SCORE_SUM_ERNEG")
+
+prs1 <- prs1[, !colnames(prs1) %in% c("IID", "PHENO1")]
+prs2 <- prs2[, !colnames(prs2) %in% c("IID", "PHENO1")]
+prs3 <- prs3[, !colnames(prs3) %in% c("IID", "PHENO1")]
+
+prs <- merge(prs1, prs2, by = "BCAC_ID")
+prs <- merge(prs, prs3, by = "BCAC_ID")
+
+saveRDS(prs, file = "data/prs_final.rds")
+
