@@ -1,0 +1,108 @@
+
+
+
+# Load necessary libraries
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(readr)
+library(tidyverse)
+library(pROC)
+
+# Load data
+
+df <- read.csv(Overlap.csv)
+
+### FOR UNIQUE
+
+f1 <- df
+f1$PRS <- f1[,"PRS only"]/f1[,"n"]
+f1$Gail <- f1[,"Gail only"]/f1[,"n"]
+f1$FH <- f1[,"FH only"]/f1[,"n"]
+f1$Group <- NA
+f1$Group[f1[,"Status"]=="0"] <- "Control"
+f1$Group[f1[,"Status"]=="1"] <- "Invasive"
+f1$Group[f1[,"Status"]=="2"] <- "DCIS"
+f1$AgeGroup <- f1[,"AgeEthnicity"]
+f1 <- f1[,c("Threshold","AgeEthnicity","PRS","Gail","FH","Group","AgeGroup","n")]
+
+f1$AgeGroup <- as.character(f1$AgeGroup)
+f1$AgeGroup[f1$AgeEthnicity=="<50 & Asian"] <- "Asian, <50y"
+f1$AgeGroup[f1$AgeEthnicity=="<50 & European"] <- "European, <50y"
+f1$AgeGroup[f1$AgeEthnicity=="50+ & Asian"] <- "Asian, ≥50y"
+f1$AgeGroup[f1$AgeEthnicity=="50+ & European"] <- "European, ≥50y"
+
+
+df_long <- f1 %>%
+  pivot_longer(
+    cols = c(PRS, Gail, FH),
+    names_to = "Source",
+    values_to = "Prop"
+  ) %>%
+  mutate(
+    Source = factor(Source, levels = c("PRS", "Gail", "FH")),
+    AgeGroup = factor(AgeGroup, levels = c(
+      "Asian, <50y", "Asian, ≥50y",
+      "European, <50y", "European, ≥50y"
+    ))
+  )
+
+
+label_df <- df_long %>%
+  group_by(Group, AgeGroup) %>%
+  summarise(n = first(n), .groups = "drop") %>%
+  mutate(
+    label = paste0("n=", n),
+    x = max(na.omit(df_long$Threshold)),
+    y = max(na.omit(df_long$Prop))
+  )
+
+
+ggplot(df_long, aes(x = Threshold, y = Prop, color = Source, linetype = Source, group = Source, size = Source)) +
+  geom_line() + 
+  facet_grid(Group ~ AgeGroup) +
+
+  scale_color_manual(values = c(
+    "PRS" = "black",
+    "Gail" = "gray50",
+    "FH" = "orange"
+  )) +
+  scale_linetype_manual(values = c(
+    "PRS" = "solid",
+    "Gail" = "solid",
+    "FH" = "solid"
+  )) +
+  scale_size_manual(values = c(
+    "PRS" = 1.5,
+    "Gail" = 1.2,
+    "FH" = 1.2
+  )) +
+
+  geom_text(data = label_df, aes(x = x, y = y, label = label),
+            inherit.aes = FALSE, hjust = 1, vjust = 1, size = 6) +
+
+  labs(
+    x = "Five-year absolute risk threshold (%)",
+    y = "Proportion of individuals above threshold risk",
+    color = "Model",
+    linetype = "Model",
+    size = "Model"
+  ) +
+  guides(
+    color = guide_legend(order = 1),
+    linetype = guide_legend(order = 1),
+    size = guide_legend(order = 1)
+  ) +
+  theme_minimal(base_size = 15) +
+  theme(
+    strip.text = element_text(size = 15, face = "bold"),
+    axis.text = element_text(size = 15),
+    axis.title = element_text(size = 15),
+    legend.position = "bottom",
+    legend.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+
+
+
+
