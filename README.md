@@ -35,7 +35,11 @@ This script contains functions used in calculating the 95% confidence intervals 
 - `glm.out()`: Fits the logistic regression model `glm(status ~ risk.score)` and returns odds ratios (OR), 95% confidence intervals, and p-values.
 - `get.auc()`: Optionally computes the Area Under the Curve (AUC) and its 95% CI using the `pROC` package, for model discrimination.
 
-### 2. `calibration.R`
+### 4. Proportion plots of high-risk individuals across varying thresholds
+
+In the folder `overlap_plots` contains the R scripts for generating Figure 1 and Supplementary Figures 4 & 5 respectively. The `overlap.csv` file contains the values for Supplementary Table 4.
+
+### 5. `calibration.R`
 
 This script contains the function used to generate calibration plots and p-values using the R package `predtools`.
 
